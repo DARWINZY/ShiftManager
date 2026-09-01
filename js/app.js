@@ -59,11 +59,17 @@
 
   form.addEventListener("submit", async e => {
     e.preventDefault();
+
+    const duties = Array.from(document.querySelectorAll('input[name="duty"]:checked')).map(el => el.value).join(", ");
+    if (!duties) {
+      showMsg("กรุณาเลือกจุดเวรอย่างน้อย 1 จุด", "warn");
+      return;
+    }
+
     submitBtn.disabled = true;
     submitBtn.textContent = "กำลังส่ง...";
 
     try {
-      const duties = Array.from(document.querySelectorAll('input[name="duty"]:checked')).map(el => el.value).join(", ");
       const status = document.querySelector('input[name="status"]:checked')?.value || "";
       const note = document.getElementById("note").value;
 
@@ -188,6 +194,14 @@
 
     try {
       const duties = Array.from(document.querySelectorAll('input[name="modalDuty"]:checked')).map(el => el.value).join(", ");
+      if (!duties) {
+        modalMsg.innerHTML = `<span class="msg-icon">${Icons.alertTriangle(16)}</span> กรุณาเลือกจุดเวรอย่างน้อย 1 จุด`;
+        modalMsg.className = "msg msg--warn";
+        modalMsg.classList.remove("hidden");
+        modalSubmitBtn.disabled = false;
+        modalSubmitBtn.textContent = "ลงเวลาย้อนหลัง";
+        return;
+      }
       const status = document.querySelector('input[name="modalStatus"]:checked')?.value || "";
       const note = document.getElementById("modalNote").value;
 

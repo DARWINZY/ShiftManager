@@ -40,7 +40,9 @@ const Calendar = {
 
   getRecordForDate(day) {
     const ds = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    return this.records.find(r => r.date === ds) || null;
+    // Return the LAST matching record (most recent entry if duplicates exist)
+    const matches = this.records.filter(r => r.date === ds);
+    return matches.length > 0 ? matches[matches.length - 1] : null;
   },
 
   render(containerId, onDayClick) {
@@ -125,8 +127,15 @@ const Calendar = {
   },
 
   async refreshCalendar(containerId, onDayClick) {
+    const el = document.getElementById(containerId);
+    if (el) {
+      const title = el.querySelector(".cal-title");
+      if (title) title.textContent += " …";
+      el.style.opacity = "0.5";
+    }
     const user = Auth.getCurrentUser();
     if (user) await this.loadRecords(user.fullName);
     this.render(containerId, onDayClick);
+    if (el) el.style.opacity = "1";
   },
 };

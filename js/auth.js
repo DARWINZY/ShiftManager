@@ -3,16 +3,27 @@
 // ─────────────────────────────────────────────
 
 const Auth = {
-  // บันทึกผู้ใช้ที่เลือก
+  SESSION_TTL: 24 * 60 * 60 * 1000, // 24 hours
+
+  // บันทึกผู้ใช้ที่เลือก (พร้อม timestamp)
   login(member) {
-    localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(member));
+    const session = { ...member, loginAt: Date.now() };
+    localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
   },
 
-  // ดึงข้อมูลผู้ใช้ปัจจุบัน
+  // ดึงข้อมูลผู้ใช้ปัจจุบัน (ตรวจ expiry)
   getCurrentUser() {
     const raw = localStorage.getItem(CONFIG.SESSION_KEY);
     if (!raw) return null;
-    try { return JSON.parse(raw); }
+    try {
+      const data = JSON.parse(raw);
+      // ถ้า session หมดอายุ (24 ชม.) ให้ logout
+      if (data.loginAt && (Date.now() - data.loginAt) > this.SESSION_TTL) {
+        this.logout();
+        return null;
+      }
+      return data;
+    }
     catch { return null; }
   },
 
