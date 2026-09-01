@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="description" content="ลงเวลาปฏิบัติงาน ดูปฏิทินและประวัติเวรย้อนหลัง">
+  <title>ลงเวลา — เวรประจำวัน</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="dash-header">
+      <div>
+        <div class="dash-header__name" id="headerNickname">—</div>
+        <div class="dash-header__pos" id="userPosition">—</div>
+      </div>
+      <button class="btn--ghost" id="logoutBtn"><span id="logoutIcon"></span> ออก</button>
+    </div>
+
+    <div class="hidden"><span id="userName"></span></div>
+
+    <!-- Check-in -->
+    <div class="card">
+      <div class="section-label" style="margin-bottom:16px;">ลงเวลาวันนี้</div>
+
+      <form id="checkInForm">
+        <div class="form-group">
+          <div class="section-label">จุดเวร <span class="hint">(เลือกได้หลายข้อ)</span></div>
+          <div class="duty-grid" id="dutyGrid"></div>
+        </div>
+
+        <div class="form-group">
+          <div class="section-label">สถานะ <span class="required-dot">*</span></div>
+          <div class="status-group" id="statusGroup"></div>
+        </div>
+
+        <div class="form-group">
+          <div class="section-label">หมายเหตุ <span class="hint">(ถ้ามี)</span></div>
+          <input type="text" id="note" class="input" placeholder="เช่น มาสาย 10 นาที">
+        </div>
+
+        <div class="form-group">
+          <div class="section-label">แนบรูปหลักฐาน <span class="hint">(ไม่บังคับ)</span></div>
+          <div class="photo-zone" id="photoZone">
+            <span class="photo-zone__icon" id="cameraIcon"></span>
+            เลือกรูป หรือถ่ายใหม่
+            <input type="file" id="photo" accept="image/*,.heic,.heif">
+          </div>
+          <p id="photoInfo" class="photo-info"></p>
+          <img id="photoPreview" class="photo-preview hidden" alt="preview">
+        </div>
+
+        <button type="submit" id="submitBtn" class="btn">ลงเวลา</button>
+        <div id="message" class="msg hidden"></div>
+      </form>
+    </div>
+
+    <hr class="divider">
+
+    <!-- Calendar -->
+    <div class="card">
+      <div class="section-label" style="margin-bottom:4px;">ปฏิทินเวร</div>
+      <p style="font-size:12px;color:var(--ink-faint);margin-bottom:16px;">กดวันที่ผ่านมาเพื่อลงเวลาย้อนหลัง</p>
+      <div id="calendarContainer"></div>
+    </div>
+
+    <p class="page-footer">สภานักเรียน · v2.1</p>
+  </div>
+
+  <!-- Modal -->
+  <div id="retroModal" class="hidden">
+    <div class="modal-overlay" id="modalOverlay"></div>
+    <div class="modal-wrap">
+      <div class="modal-box">
+        <div class="modal-head">
+          <span class="modal-head__title">ลงเวลาย้อนหลัง</span>
+          <button type="button" class="modal-close" id="modalClose"></button>
+        </div>
+
+        <div class="modal-date" id="modalDate">—</div>
+
+        <form id="retroForm">
+          <div class="form-group">
+            <div class="section-label">จุดเวร</div>
+            <div class="duty-grid" id="modalDutyGrid"></div>
+          </div>
+
+          <div class="form-group">
+            <div class="section-label">สถานะ <span class="required-dot">*</span></div>
+            <div class="status-group" id="modalStatusGroup"></div>
+          </div>
+
+          <div class="form-group">
+            <div class="section-label">หมายเหตุ</div>
+            <input type="text" id="modalNote" class="input" placeholder="เช่น ลืมลงเวร">
+          </div>
+
+          <div class="form-group">
+            <div class="section-label">แนบรูป</div>
+            <div class="photo-zone">
+              <span id="modalCameraIcon"></span> เลือกรูป
+              <input type="file" id="modalPhoto" accept="image/*,.heic,.heif">
+            </div>
+            <img id="modalPhotoPreview" class="photo-preview hidden" alt="preview">
+          </div>
+
+          <div id="modalMessage" class="msg hidden"></div>
+          <button type="submit" id="modalSubmitBtn" class="btn" style="margin-top:12px;">ลงเวลาย้อนหลัง</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/icons.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    // Render SVG icons into DOM
+    document.getElementById("logoutIcon").innerHTML = Icons.logOut(14);
+    document.getElementById("cameraIcon").innerHTML = Icons.camera(24);
+    document.getElementById("modalClose").innerHTML = Icons.x(14);
+    if (document.getElementById("modalCameraIcon")) document.getElementById("modalCameraIcon").innerHTML = Icons.camera(20);
+  </script>
+</body>
+</html>

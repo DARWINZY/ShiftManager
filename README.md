@@ -1,87 +1,79 @@
-# 📋 Arrange the Duty Schedule (จัดตารางเวรประจำวัน)
+# 📋 ระบบบันทึกเวรประจำวัน — สภานักเรียน v2.0
 
-ระบบจัดตารางเวรสำหรับสภานักเรียน — สร้างแบบบันทึกการปฏิบัติหน้าที่ประจำวันในรูปแบบ Excel และ Markdown
+ระบบลงเวลาปฏิบัติงานสำหรับสภานักเรียน ผ่านเว็บแอป พร้อมปฏิทินสถานะและการลงเวลาย้อนหลัง
 
 ## 📁 โครงสร้างโปรเจค
 
 ```
 Arrange-the-duty-schedule/
-├── create_schedule.py      # สร้างไฟล์ Excel (.xlsx) ตารางเวร 25-29 May
-├── generate_markdown.py    # สร้างไฟล์ Markdown ตารางเวร
-├── requirements.txt        # Python dependencies
-├── .env                    # Environment variables (output path)
-├── .gitignore              # ไฟล์ที่ git ไม่ track
-└── README.md               # ไฟล์นี้
+├── index.html              # หน้าเลือกชื่อเข้าสู่ระบบ
+├── dashboard.html          # หน้ากดเข้างาน + ปฏิทิน
+├── css/
+│   └── styles.css          # Design system + สไตล์ทั้งหมด
+├── js/
+│   ├── config.js           # Google Apps Script URL + settings
+│   ├── data.js             # รายชื่อสมาชิก + ตำแหน่ง + จุดเวร
+│   ├── auth.js             # จัดการ session (localStorage)
+│   ├── api.js              # ส่ง/ดึงข้อมูล Google Sheets
+│   ├── calendar.js         # render ปฏิทิน + สถานะรายวัน
+│   └── app.js              # logic หน้า dashboard
+├── apps-script/
+│   └── Code.gs             # Google Apps Script (doPost + doGet)
+├── .env                    # Reference (OUTPUT_DIR)
+├── .gitignore              # Git ignore rules
+├── README.md               # ไฟล์นี้
+└── archive/                # ไฟล์ Python เดิม
+    ├── create_schedule.py
+    ├── generate_markdown.py
+    └── requirements.txt
 ```
 
-## 🚀 วิธีติดตั้งและรัน
+## 🚀 วิธีใช้งาน
 
-### 1. Clone repository
+### 1. Deploy Google Apps Script
 
+1. เปิด Google Sheets ที่ต้องการเก็บข้อมูล
+2. ไปที่ **Extensions → Apps Script**
+3. ลบโค้ดเดิม → copy โค้ดจาก `apps-script/Code.gs` วางแทน
+4. กด **Deploy → New deployment → Web app**
+   - Execute as: **Me**
+   - Who has access: **Anyone**
+5. Copy URL ที่ได้ → แก้ใน `js/config.js` ที่ `SCRIPT_URL`
+
+### 2. Deploy เว็บ
+
+**บน Netlify (เหมือนเดิม):**
+- Push ไฟล์ทั้งหมดขึ้น GitHub
+- Netlify จะ auto deploy
+
+**หรือ local test:**
 ```bash
-git clone https://github.com/thanpisitthongnam-cpu/Arrange-the-duty-schedule.git
-cd Arrange-the-duty-schedule
+# ใช้ VS Code Live Server, หรือ
+npx serve .
 ```
 
-### 2. สร้าง Virtual Environment (แนะนำ)
+### 3. ใช้งาน
 
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
-```
+1. เปิดเว็บ → เลือกชื่อเข้าสู่ระบบ
+2. กดเข้างาน → อัพรูป → เลือกจุดเวร → เลือกสถานะ → ลงเวลา
+3. ดูปฏิทิน → สีต่าง ๆ แสดงสถานะ
+4. กดวันในปฏิทิน → ลงเวลาย้อนหลังได้
 
-### 3. ติดตั้ง Dependencies
+## 📌 ฟีเจอร์หลัก
 
-```bash
-pip install -r requirements.txt
-```
-
-### 4. ตั้งค่า Environment Variables
-
-สร้างไฟล์ `.env` (มีตัวอย่างอยู่แล้ว) หรือแก้ไข output path ตามต้องการ:
-
-```env
-OUTPUT_DIR=./output
-```
-
-### 5. รันโปรแกรม
-
-**สร้างไฟล์ Excel:**
-```bash
-python create_schedule.py
-```
-
-**สร้างไฟล์ Markdown:**
-```bash
-python generate_markdown.py
-```
-
-## 📄 Output
-
-- `create_schedule.py` → สร้าง `แบบบันทึกการปฏิบัติหน้าที่_25_29_May.xlsx` (และ PDF ถ้ามี Microsoft Excel)
-- `generate_markdown.py` → สร้าง `markdown_output.md`
-
-## 📌 รายละเอียดหน้าที่
-
-ตารางเวรประจำวัน 25-29 พฤษภาคม ประกอบด้วย:
-- เวรตรวจตึก (อาคาร 3, 5, 6, 9, 11, 15)
-- สายเฉื่อย (หน้าอาคาร 5 ม.1-6, หลังโดม ม.1-6)
-- เชิญธง
-- เวรประตู (1, 2, 4)
-- มุมรักสิรินธร / อยู่ซอยมุมรักสิรินธร
-- ห้องน้ำสนามบาส / ห้องน้ำหน้าอาคาร10
-- โรงรถสหกรณ์
+- ✅ **เลือกชื่อเข้าสู่ระบบ** — ไม่ต้องพิมพ์ ลดปัญหาข้อมูลเพี้ยน
+- ✅ **ตำแหน่ง auto-fill** — ผูกกับชื่ออัตโนมัติ
+- ✅ **ปฏิทินสถานะ** — แสดงสีตามสถานะแต่ละวัน
+- ✅ **ลงเวลาย้อนหลัง** — กดวันในปฏิทิน → ลงย้อนหลังได้
+- ✅ **Google Sheets sync** — ข้อมูลย้อนหลังแทรกตามลำดับวัน
+- ✅ **Responsive** — ใช้งานได้ทั้ง mobile/desktop
 
 ## 🛠 Tech Stack
 
-- **Python 3.8+**
-- **openpyxl** — สร้าง/แก้ไข Excel
-- **python-dotenv** — โหลด environment variables
-- **pywin32** (optional, Windows only) — แปลง Excel เป็น PDF
+- **HTML5 + Vanilla CSS + JavaScript** — ไม่ต้อง build
+- **Google Sheets** — เป็น database ผ่าน Apps Script
+- **Netlify** — static hosting
 
 ## 👥 ผู้พัฒนา
 
-สภานักเรียน — ระบบจัดตารางเวร
+สภานักเรียน — ระบบจัดตารางเวร v2.0

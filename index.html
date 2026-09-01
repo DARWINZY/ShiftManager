@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="description" content="ระบบบันทึกเวรประจำวัน สภานักเรียน">
+  <title>เข้าสู่ระบบ — เวรประจำวัน</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="container container--wide">
+
+    <div class="page-header">
+      <h1 class="page-header__title">เวรประจำวัน</h1>
+      <p class="page-header__sub">เลือกชื่อของคุณเพื่อเข้าสู่ระบบ</p>
+    </div>
+
+    <div class="search-wrap">
+      <span class="search-wrap__icon" id="searchIcon"></span>
+      <input type="text" id="searchInput" class="input input--search"
+        placeholder="ค้นหาชื่อ..." autocomplete="off">
+    </div>
+
+    <div id="nameList" class="name-list"></div>
+
+    <p class="page-footer">สภานักเรียน · v2.1</p>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/icons.js"></script>
+  <script>
+    if (Auth.redirectIfLoggedIn()) { /* redirected */ }
+    else {
+      const list = document.getElementById("nameList");
+      const search = document.getElementById("searchInput");
+
+      // Render search icon
+      document.getElementById("searchIcon").innerHTML = Icons.search(14);
+
+      function render(filter) {
+        list.innerHTML = "";
+        const q = (filter || "").trim().toLowerCase();
+        const filtered = MEMBERS.filter(m =>
+          !q || m.nickname.toLowerCase().includes(q) || m.fullName.toLowerCase().includes(q)
+        );
+
+        if (!filtered.length) {
+          list.innerHTML = '<div style="padding:24px;text-align:center;color:#a8a8a8;">ไม่พบรายชื่อ</div>';
+          return;
+        }
+
+        filtered.forEach(m => {
+          const el = document.createElement("div");
+          el.className = "name-item";
+          el.id = `member-${m.id}`;
+          el.setAttribute("role", "button");
+          el.setAttribute("tabindex", "0");
+          el.innerHTML = `
+            <div class="name-item__initial">${m.nickname.charAt(0)}</div>
+            <div class="name-item__info">
+              <div class="name-item__nickname">${m.nickname}</div>
+              <div class="name-item__fullname">${m.fullName}</div>
+            </div>
+            <span class="name-item__arrow">${Icons.arrowRight(14)}</span>
+          `;
+          el.addEventListener("click", () => { Auth.login(m); location.href = "dashboard.html"; });
+          el.addEventListener("keydown", e => { if (e.key === "Enter") el.click(); });
+          list.appendChild(el);
+        });
+      }
+
+      render("");
+      search.addEventListener("input", () => render(search.value));
+      search.focus();
+    }
+  </script>
+</body>
+</html>
