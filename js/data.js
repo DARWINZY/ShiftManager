@@ -39,7 +39,6 @@ const MEMBERS = [
   { id: 33, nickname: "ชมพู่",     fullName: "นางสาวนิรมล ทุนาบูรณ์",            position: "หัวหน้าบริหารทั่วไป" },
   { id: 34, nickname: "พิ้งกี้",   fullName: "นางสาวปวีณ์ธิดา บุญนอง",           position: "ประธานสภานักเรียน" },
   { id: 35, nickname: "ทอฝัน",     fullName: "นางสาวชุดาณัฏฐ์ สุขอุ้ม",           position: "รองประธาน" },
-  { id: 36, nickname: "คะนิ้ง",    fullName: "นางสาวเมญานี เป็นสุข",             position: "สมาชิกสภานักเรียน" },
   { id: 37, nickname: "ม่อน",      fullName: "นางสาวภัทรานิษฐ์ นภาคเวช",         position: "หัวหน้าขอเวลาเรียน" },
   { id: 38, nickname: "ใบหม่อน",   fullName: "นางสาวจิรัชญา ศรีผุย",             position: "หัวหน้าระดับ ม.3" },
   { id: 39, nickname: "น้ำหนึ่ง",  fullName: "นางสาวอรวิภา บุญหมั้น",            position: "หัวหน้าระดับชั้น" },
@@ -59,18 +58,19 @@ const DUTY_STATIONS = [
   "สายเฉื่อยบริเวณโรงรถ",
   "ห้องน้ำสนามบาส",
   "สายเฉื่อยหน้าอาคาร 9",
-  "ตรวจเวรในโดม",
+  "ตรวจแถวในโดม",
   "เวรห้องน้ำอาคาร 10",
   "บริหาร",
 ];
 
 // สถานะการมา/ลา
 const STATUSES = [
-  { value: "มาปฏิบัติงาน",         iconFn: "checkCircle",   color: "#2d8a4e" },
-  { value: "ลาป่วย",               iconFn: "thermometer",   color: "#c93c37" },
-  { value: "ลากิจ",                iconFn: "fileText",      color: "#b87b1a" },
-  { value: "ไปทำกิจกรรมโรงเรียน",  iconFn: "school",        color: "#2563a8" },
-  { value: "อื่นๆ",               iconFn: "plusCircle",    color: "#6b6b6b" },
+  { value: "มาปฏิบัติงาน",                 iconFn: "checkCircle",   color: "#2d8a4e" },
+  { value: "ลาป่วย",                     iconFn: "thermometer",   color: "#c93c37" },
+  { value: "ลากิจ",                      iconFn: "fileText",      color: "#b87b1a" },
+  { value: "ไปทำกิจกรรมโรงเรียน",           iconFn: "school",        color: "#2563a8" },
+  { value: "ฝนตก",                     iconFn: "cloudRain",     color: "#0f224c" },
+  { value: "อื่นๆ",                      iconFn: "plusCircle",    color: "#6b6b6b" },
 ];
 
 // Helper: หา member จาก id
