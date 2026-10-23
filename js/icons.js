@@ -14,7 +14,6 @@ const Icons = {
   thermometer(s) { return this._svg('<path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/>', s); },
   fileText(s) { return this._svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>', s); },
   school(s) { return this._svg('<path d="M2 22V6l10-4 10 4v16"/><path d="M6 12v5"/><path d="M18 12v5"/><path d="M2 10h20"/><rect x="9" y="14" width="6" height="8"/>', s); },
-  cloudRain(s) { return this._svg('<path d="M20 17.58a5 5 0 0 0-8.83-3.15a4.79 4.79 0 0 0-4.5 2.85A3.6 3.6 0 0 0 7 20"/>', s); },
   plusCircle(s) { return this._svg('<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>', s); },
 
   // ── UI ──

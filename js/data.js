@@ -69,7 +69,6 @@ const STATUSES = [
   { value: "ลาป่วย",                     iconFn: "thermometer",   color: "#c93c37" },
   { value: "ลากิจ",                      iconFn: "fileText",      color: "#b87b1a" },
   { value: "ไปทำกิจกรรมโรงเรียน",           iconFn: "school",        color: "#2563a8" },
-  { value: "ฝนตก",                     iconFn: "cloudRain",     color: "#0f224c" },
   { value: "อื่นๆ",                      iconFn: "plusCircle",    color: "#6b6b6b" },
 ];
 
