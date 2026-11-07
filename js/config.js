@@ -12,13 +12,18 @@ const CONFIG = {
   // GID ของ tab "บันทึกเวรประจำวัน" (ใช้ใน CSV export URL)
   SHEET_GID: "1803925258",
 
-  // ขนาดรูปสูงสุด
-  MAX_PHOTO_SIZE: 3 * 1024 * 1024,
-  MAX_IMAGE_DIM: 1000,
-  IMAGE_QUALITY: 0.7,
+  // เว็บ /photos (NEXT9) — รูปเวรจะถูกเก็บเข้าอัลบั้ม "เวรประจำวัน" ด้วย
+  PHOTOS_ORIGIN: "https://next9.yumistack.net",
+  PHOTOS_ROOT_ALBUM: "เวรประจำวัน",
+
+  // รูปที่ส่งเข้า Google Drive ถูกย่อก่อนส่ง (Apps Script รับ payload ได้จำกัด)
+  // ส่วนเว็บ /photos ได้ไฟล์ต้นฉบับ
+  MAX_PHOTOS: 20,
+  MAX_IMAGE_DIM: 1600,
+  IMAGE_QUALITY: 0.82,
 
   // Session key
   SESSION_KEY: "duty_current_user",
 
-  APP_VERSION: "2.1.0",
+  APP_VERSION: "3.0.0",
 };

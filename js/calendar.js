@@ -6,6 +6,7 @@ const Calendar = {
   currentYear: new Date().getFullYear(),
   currentMonth: new Date().getMonth(),
   records: [],
+  selectedDate: "",
 
   dayNames: ["จ", "อ", "พ", "พฤ", "ศ", "ส", "อา"],
 
@@ -16,15 +17,23 @@ const Calendar = {
   ],
 
   statusClass(status) {
-    if (!status) return "none";
-    const map = {
-      "มาปฏิบัติงาน": "present",
-      "ลาป่วย": "sick",
-      "ลากิจ": "leave",
-      "ไปทำกิจกรรมโรงเรียน": "activity",
-      "อื่นๆ": "other",
-    };
-    return map[status] || "none";
+    const s = STATUSES.find(x => x.value === status);
+    return s ? s.key : "none";
+  },
+
+  ymd(y, m, d) {
+    return `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+  },
+
+  todayStr() {
+    const t = new Date();
+    return this.ymd(t.getFullYear(), t.getMonth(), t.getDate());
+  },
+
+  // "2026-11-06" → "6 พฤศจิกายน 2569"
+  thaiDate(ds) {
+    const [y, m, d] = ds.split("-").map(Number);
+    return `${d} ${this.monthNames[m - 1]} ${y + 543}`;
   },
 
   getYearMonth() {
@@ -32,110 +41,79 @@ const Calendar = {
   },
 
   async loadRecords(fullName) {
-    try {
-      const res = await Api.getHistory(fullName, this.getYearMonth());
-      this.records = (res && res.records) ? res.records : [];
-    } catch { this.records = []; }
+    const res = await Api.getHistory(fullName, this.getYearMonth());
+    this.records = (res && res.records) ? res.records : [];
   },
 
-  getRecordForDate(day) {
-    const ds = `${this.currentYear}-${String(this.currentMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    // Return the LAST matching record (most recent entry if duplicates exist)
-    const matches = this.records.filter(r => r.date === ds);
-    return matches.length > 0 ? matches[matches.length - 1] : null;
+  // แถวล่าสุดของวันนั้น (ถ้าลงซ้ำ)
+  getRecord(ds) {
+    const m = this.records.filter(r => r.date === ds);
+    return m.length ? m[m.length - 1] : null;
   },
 
   render(containerId, onDayClick) {
     const el = document.getElementById(containerId);
     if (!el) return;
 
-    const yr = this.currentYear;
-    const mo = this.currentMonth;
-    const today = new Date();
+    const yr = this.currentYear, mo = this.currentMonth;
+    const today = this.todayStr();
     const daysInMonth = new Date(yr, mo + 1, 0).getDate();
     let firstIdx = new Date(yr, mo, 1).getDay() - 1;
     if (firstIdx < 0) firstIdx = 6;
 
-    const thaiYear = yr + 543;
+    const done = this.records.length ? new Set(this.records.map(r => r.date)).size : 0;
     let h = `
       <div class="cal-header">
-        <button type="button" class="cal-nav" id="calPrev">${Icons.chevronLeft(16)}</button>
-        <span class="cal-title">${this.monthNames[mo]} ${thaiYear}</span>
-        <button type="button" class="cal-nav" id="calNext">${Icons.chevronRight(16)}</button>
-      </div>
-      <div class="cal-legend">
-        <span class="cal-legend-item"><span class="cal-dot cal-dot--present"></span>มา</span>
-        <span class="cal-legend-item"><span class="cal-dot cal-dot--sick"></span>ป่วย</span>
-        <span class="cal-legend-item"><span class="cal-dot cal-dot--leave"></span>ลากิจ</span>
-        <span class="cal-legend-item"><span class="cal-dot cal-dot--activity"></span>กิจกรรม</span>
-        <span class="cal-legend-item"><span class="cal-dot cal-dot--none"></span>ไม่ลง</span>
+        <button type="button" class="icon-btn" id="calPrev" aria-label="เดือนก่อน"><i class="fas fa-chevron-left"></i></button>
+        <div class="cal-title">${this.monthNames[mo]} ${yr + 543}<small>ลงแล้ว ${done} วัน</small></div>
+        <button type="button" class="icon-btn" id="calNext" aria-label="เดือนถัดไป"><i class="fas fa-chevron-right"></i></button>
       </div>
       <div class="cal-grid">
     `;
-
-    this.dayNames.forEach(d => { h += `<div class="cal-day-name">${d}</div>`; });
-
-    for (let i = 0; i < firstIdx; i++) h += `<div class="cal-cell cal-cell--empty"></div>`;
+    this.dayNames.forEach(d => { h += `<div class="cal-dow">${d}</div>`; });
+    for (let i = 0; i < firstIdx; i++) h += `<div></div>`;
 
     for (let d = 1; d <= daysInMonth; d++) {
-      const dt = new Date(yr, mo, d);
-      const dow = dt.getDay();
-      const isWknd = (dow === 0 || dow === 6);
-      const isToday = (dt.toDateString() === today.toDateString());
-      const isPast = dt < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-      const rec = this.getRecordForDate(d);
+      const ds = this.ymd(yr, mo, d);
+      const dow = new Date(yr, mo, d).getDay();
+      const weekend = dow === 0 || dow === 6;
+      const rec = this.getRecord(ds);
       const sc = this.statusClass(rec ? rec.status : null);
-
-      let cls = `cal-cell cal-cell--${sc}`;
-      if (isToday) cls += " cal-cell--today";
-      if (isWknd) cls += " cal-cell--weekend";
-      const click = (!isWknd && (isPast || isToday)) ? " cal-cell--clickable" : "";
-
-      const dateStr = `${yr}-${String(mo + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-
-      h += `<div class="${cls}${click}" data-day="${d}" data-date="${dateStr}">
-        <span class="cal-day-num">${d}</span>
-        ${!isWknd ? `<span class="cal-bar cal-bar--${sc}"></span>` : ""}
-      </div>`;
+      const future = ds > today;
+      const cls = ["cal-cell", `is-${sc}`];
+      if (ds === today) cls.push("is-today");
+      if (ds === this.selectedDate) cls.push("is-selected");
+      if (weekend) cls.push("is-weekend");
+      if (future) cls.push("is-future");
+      h += `<button type="button" class="${cls.join(" ")}" data-date="${ds}" ${future ? "disabled" : ""}>
+        <span>${d}</span>${rec && rec.photos.length ? `<i class="fas fa-image cal-pic"></i>` : ""}
+      </button>`;
     }
-
-    h += `</div>`;
+    h += `</div>
+      <div class="cal-legend">
+        ${STATUSES.map(s => `<span><i class="dot is-${s.key}"></i>${s.short}</span>`).join("")}
+      </div>`;
     el.innerHTML = h;
 
-    document.getElementById("calPrev").addEventListener("click", () => {
-      this.currentMonth--;
-      if (this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
-      this.refreshCalendar(containerId, onDayClick);
+    el.querySelector("#calPrev").onclick = () => {
+      if (--this.currentMonth < 0) { this.currentMonth = 11; this.currentYear--; }
+      this.refresh(containerId, onDayClick);
+    };
+    el.querySelector("#calNext").onclick = () => {
+      if (++this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
+      this.refresh(containerId, onDayClick);
+    };
+    el.querySelectorAll(".cal-cell:not([disabled])").forEach(cell => {
+      cell.onclick = () => onDayClick(cell.dataset.date, this.getRecord(cell.dataset.date));
     });
-
-    document.getElementById("calNext").addEventListener("click", () => {
-      this.currentMonth++;
-      if (this.currentMonth > 11) { this.currentMonth = 0; this.currentYear++; }
-      this.refreshCalendar(containerId, onDayClick);
-    });
-
-    if (onDayClick) {
-      el.querySelectorAll(".cal-cell--clickable").forEach(cell => {
-        cell.addEventListener("click", () => {
-          const date = cell.getAttribute("data-date");
-          const day = parseInt(cell.getAttribute("data-day"));
-          onDayClick(date, this.getRecordForDate(day));
-        });
-      });
-    }
   },
 
-  async refreshCalendar(containerId, onDayClick) {
+  async refresh(containerId, onDayClick) {
     const el = document.getElementById(containerId);
-    if (el) {
-      const title = el.querySelector(".cal-title");
-      if (title) title.textContent += " …";
-      el.style.opacity = "0.5";
-    }
+    if (el) el.classList.add("is-loading");
     const user = Auth.getCurrentUser();
     if (user) await this.loadRecords(user.fullName);
     this.render(containerId, onDayClick);
-    if (el) el.style.opacity = "1";
+    if (el) el.classList.remove("is-loading");
   },
 };

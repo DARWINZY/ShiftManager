@@ -2,79 +2,76 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#8f0a0a">
   <meta name="description" content="ระบบบันทึกเวรประจำวัน สภานักเรียน">
-  <title>เข้าสู่ระบบ — เวรประจำวัน</title>
-  <link rel="stylesheet" href="css/styles.css">
+  <title>เวรประจำวัน — สภานักเรียน</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="css/styles.css?v=3.0.0">
 </head>
 <body>
-  <div class="container container--wide">
-
-    <div class="page-header">
-      <h1 class="page-header__title">เวรประจำวัน</h1>
-      <p class="page-header__sub">เลือกชื่อของคุณเพื่อเข้าสู่ระบบ</p>
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="hero-row">
+        <span class="hero-kicker"><i class="fas fa-clipboard-check"></i> สภานักเรียน</span>
+        <div class="hero-actions">
+          <a class="chip-btn" href="photos.html"><i class="fas fa-images"></i> รูปเวร</a>
+        </div>
+      </div>
+      <h1>เวรประจำวัน</h1>
+      <p class="hero-sub">แตะชื่อของคุณเพื่อเริ่มลงเวร</p>
     </div>
+  </header>
 
-    <div class="search-wrap">
-      <span class="search-wrap__icon" id="searchIcon"></span>
-      <input type="text" id="searchInput" class="input input--search"
-        placeholder="ค้นหาชื่อ..." autocomplete="off">
+  <main class="main">
+    <div class="card card-flush">
+      <div class="search">
+        <i class="fas fa-magnifying-glass"></i>
+        <input type="search" id="searchInput" class="input" placeholder="ค้นหาชื่อเล่น ชื่อจริง หรือตำแหน่ง" autocomplete="off">
+      </div>
+      <div id="nameList" class="name-list"></div>
     </div>
+    <p class="foot">สภานักเรียน · v3.0</p>
+  </main>
 
-    <div id="nameList" class="name-list"></div>
-
-    <p class="page-footer">สภานักเรียน · v2.1</p>
-  </div>
-
-  <script src="js/config.js"></script>
-  <script src="js/data.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/icons.js"></script>
+  <script src="js/config.js?v=3.0.0"></script>
+  <script src="js/data.js?v=3.0.0"></script>
+  <script src="js/auth.js?v=3.0.0"></script>
   <script>
-    if (Auth.redirectIfLoggedIn()) { /* redirected */ }
-    else {
+    if (!Auth.redirectIfLoggedIn()) {
       const list = document.getElementById("nameList");
       const search = document.getElementById("searchInput");
-
-      // Render search icon
-      document.getElementById("searchIcon").innerHTML = Icons.search(14);
+      const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
       function render(filter) {
-        list.innerHTML = "";
         const q = (filter || "").trim().toLowerCase();
-        const filtered = MEMBERS.filter(m =>
-          !q || m.nickname.toLowerCase().includes(q) || m.fullName.toLowerCase().includes(q)
-        );
-
-        if (!filtered.length) {
-          list.innerHTML = '<div style="padding:24px;text-align:center;color:#a8a8a8;">ไม่พบรายชื่อ</div>';
+        const items = MEMBERS.filter(m => !q || [m.nickname, m.fullName, m.position].some(v => v.toLowerCase().includes(q)));
+        if (!items.length) {
+          list.innerHTML = '<div class="empty"><i class="far fa-face-meh"></i> ไม่พบรายชื่อ</div>';
           return;
         }
-
-        filtered.forEach(m => {
-          const el = document.createElement("div");
-          el.className = "name-item";
-          el.id = `member-${m.id}`;
-          el.setAttribute("role", "button");
-          el.setAttribute("tabindex", "0");
-          el.innerHTML = `
-            <div class="name-item__initial">${m.nickname.charAt(0)}</div>
-            <div class="name-item__info">
-              <div class="name-item__nickname">${m.nickname}</div>
-              <div class="name-item__fullname">${m.fullName}</div>
-            </div>
-            <span class="name-item__arrow">${Icons.arrowRight(14)}</span>
-          `;
-          el.addEventListener("click", () => { Auth.login(m); location.href = "dashboard.html"; });
-          el.addEventListener("keydown", e => { if (e.key === "Enter") el.click(); });
-          list.appendChild(el);
-        });
+        list.innerHTML = items.map(m => `
+          <button type="button" class="name-item" data-id="${m.id}">
+            <span class="avatar">${esc(m.nickname.charAt(0))}</span>
+            <span class="name-info">
+              <b>${esc(m.nickname)}</b>
+              <small>${esc(m.fullName)} · ${esc(m.position)}</small>
+            </span>
+            <i class="fas fa-chevron-right"></i>
+          </button>`).join("");
       }
 
+      list.addEventListener("click", e => {
+        const b = e.target.closest(".name-item");
+        if (!b) return;
+        Auth.login(getMemberById(Number(b.dataset.id)));
+        location.href = "dashboard.html";
+      });
       render("");
       search.addEventListener("input", () => render(search.value));
-      search.focus();
     }
   </script>
 </body>

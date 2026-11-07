@@ -63,13 +63,13 @@ const DUTY_STATIONS = [
   "บริหาร",
 ];
 
-// สถานะการมา/ลา
+// สถานะการมา/ลา  (key ใช้กับสีใน CSS, icon เป็นชื่อไอคอน Font Awesome)
 const STATUSES = [
-  { value: "มาปฏิบัติงาน",                 iconFn: "checkCircle",   color: "#2d8a4e" },
-  { value: "ลาป่วย",                     iconFn: "thermometer",   color: "#c93c37" },
-  { value: "ลากิจ",                      iconFn: "fileText",      color: "#b87b1a" },
-  { value: "ไปทำกิจกรรมโรงเรียน",           iconFn: "school",        color: "#2563a8" },
-  { value: "อื่นๆ",                      iconFn: "plusCircle",    color: "#6b6b6b" },
+  { value: "มาปฏิบัติงาน",        key: "present",  short: "มา",      icon: "fa-circle-check" },
+  { value: "ลาป่วย",             key: "sick",     short: "ป่วย",    icon: "fa-temperature-half" },
+  { value: "ลากิจ",              key: "leave",    short: "ลากิจ",   icon: "fa-file-lines" },
+  { value: "ไปทำกิจกรรมโรงเรียน", key: "activity", short: "กิจกรรม", icon: "fa-school" },
+  { value: "อื่นๆ",              key: "other",    short: "อื่นๆ",   icon: "fa-circle-plus" },
 ];
 
 // Helper: หา member จาก id
