@@ -86,37 +86,144 @@
     Calendar.render("calendar", onDayClick);
   }
 
-  // ถ้าวันนั้นลงไปแล้ว บอกว่าลงอะไรไว้ และส่งใหม่จะแทนที่
+  // ────── รายการที่ลงไว้แล้วของวันนั้น (แก้ ✎ / ลบ 🗑) ──────
+  let editing = null;   // แถวที่กำลังแก้ (record) หรือ null
+  let canDelete = false; // Apps Script ต้อง 3.1 ขึ้นไปถึงจะลบได้
+  Api.scriptVersion().then(v => { canDelete = parseFloat(v) >= 3.1; showExisting(); });
+
+  function picsHtml(rec, idx) {
+    const list = rec.photos;
+    if (!list.length) return "";
+    return `<span class="rec-pics">` + list.slice(0, 2).map((u, i) => {
+      const t = Api.driveThumb(u, 160);
+      const more = i === 1 && list.length > 2 ? `<span class="rec-more">+${list.length - 2}</span>` : "";
+      return `<a class="rec-pic" href="${esc(u)}" target="_blank" rel="noopener" data-i="${idx}">
+        ${t ? `<img src="${esc(t)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}<i class="fas fa-image"></i>${more}</a>`;
+    }).join("") + `</span>`;
+  }
+
   function showExisting() {
-    const rec = Calendar.getRecord(workDate);
+    const recs = Calendar.getRecords(workDate);
     const n = $("existNotice");
-    const label = $("submitBtn").querySelector("span");
-    if (!rec) {
-      n.hidden = true;
-      label.textContent = workDate === Calendar.todayStr() ? "ส่งเวรวันนี้" : "ส่งเวรย้อนหลัง";
-      return;
-    }
-    const pics = rec.photos.map((u, i) => `<a href="${esc(u)}" target="_blank" rel="noopener">รูป ${i + 1}</a>`).join(" ");
+    if (editing && !recs.includes(editing)) editing = null;
+    syncSubmitLabel(recs);
+    if (!recs.length) { n.hidden = true; n.innerHTML = ""; return; }
     n.innerHTML = `
-      <i class="fas fa-circle-info"></i>
-      <div>
-        <b>${workDate === Calendar.todayStr() ? "วันนี้" : "วันนั้น"}ลงไว้แล้ว</b> — ${esc(rec.duty || "-")} · ${esc(rec.status || "-")}${rec.note ? ` · ${esc(rec.note)}` : ""}
-        ${pics ? `<div class="notice-pics">${pics}</div>` : ""}
-        <div class="notice-sub">ส่งอีกครั้งจะแก้ข้อมูลเดิม รูปเก่ายังอยู่ รูปใหม่จะเพิ่มเข้าไป</div>
-      </div>`;
+      <div class="rec-head"><i class="fas fa-circle-check"></i> ${workDate === Calendar.todayStr() ? "วันนี้" : "วันนั้น"}ลงไว้แล้ว ${recs.length > 1 ? recs.length + " รายการ" : ""}</div>
+      <ul class="rec-list">${recs.map((r, i) => `
+        <li class="rec${r === editing ? " is-editing" : ""}">
+          <div class="rec-text">
+            <b>ลงเวร ${esc(r.duty || "-")} แล้ว</b>
+            <small>${esc(r.status || "-")}${r.note ? ` · ${esc(r.note)}` : ""}${r.photos.length ? ` · ${r.photos.length} รูป` : ""}</small>
+          </div>
+          ${picsHtml(r, i)}
+          <span class="rec-btns">
+            <button type="button" class="rec-btn" data-edit="${i}" title="แก้ไข" aria-label="แก้ไข"><i class="fas fa-pen"></i></button>
+            ${canDelete ? `<button type="button" class="rec-btn is-danger" data-del="${i}" title="ลบ" aria-label="ลบ"><i class="fas fa-trash"></i></button>` : ""}
+          </span>
+        </li>`).join("")}
+      </ul>
+      ${editing ? `<div class="rec-editing"><i class="fas fa-pen"></i> กำลังแก้รายการ "${esc(editing.duty || "-")}" · รูปเดิมยังอยู่ รูปใหม่จะเพิ่มเข้าไป <button type="button" class="link-btn" data-cancel>ยกเลิกแก้ไข</button></div>` : ""}`;
     n.hidden = false;
-    label.textContent = "ส่งแก้ไข";
-    // เติมค่าเดิมให้ ถ้ายังไม่ได้เลือก
-    const d = document.querySelector(`input[name="duty"][value="${CSS.escape(rec.duty)}"]`);
-    if (d && !document.querySelector('input[name="duty"]:checked')) d.checked = true;
+  }
+
+  function syncSubmitLabel(recs) {
+    const label = $("submitBtn").querySelector("span");
+    label.textContent = editing ? "บันทึกการแก้ไข"
+      : recs && recs.length ? "ส่งแก้ไข"
+      : workDate === Calendar.todayStr() ? "ส่งเวรวันนี้" : "ส่งเวรย้อนหลัง";
+  }
+
+  function startEdit(rec) {
+    editing = rec;
+    // รายการเก่า (v2) อาจมีหลายจุด "A, B" → เลือกจุดแรก
+    const first = (rec.duty || "").split(/\s*,\s*/)[0];
+    document.querySelectorAll('input[name="duty"]').forEach(el => { el.checked = el.value === rec.duty || el.value === first; });
+    const st = document.querySelector(`input[name="status"][value="${CSS.escape(rec.status)}"]`);
+    if (st) st.checked = true;
+    $("note").value = rec.note || "";
+    showExisting();
+    $("dutyGrid").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  function cancelEdit() {
+    editing = null;
+    $("dutyForm").reset();
+    showExisting();
+  }
+
+  $("existNotice").onclick = async e => {
+    const recs = Calendar.getRecords(workDate);
+    const ed = e.target.closest("[data-edit]");
+    const del = e.target.closest("[data-del]");
+    if (e.target.closest("[data-cancel]")) return cancelEdit();
+    if (ed) return startEdit(recs[+ed.dataset.edit]);
+    if (del) return deleteRec(recs[+del.dataset.del], recs.length);
+  };
+
+  async function deleteRec(rec, countThatDay) {
+    if (!rec) return;
+    const ok = await ask({
+      title: "ลบรายการนี้?",
+      text: `ลงเวร ${rec.duty || "-"} · ${Calendar.thaiDate(rec.date)}` + (rec.photos.length ? `\nรูป ${rec.photos.length} รูปจะย้ายไปถังขยะ` : ""),
+      ok: "ลบ",
+    });
+    if (!ok) return;
+    openSheet("กำลังลบ...");
+    const st = {
+      sheet: { title: "ลบออกจากชีท", sub: rec.photos.length ? "และย้ายรูปใน Drive ไปถังขยะ" : "", state: "run" },
+      photos: { title: "ลบรูปในอัลบั้มเว็บ", sub: "ย้ายไปถังขยะ กู้คืนได้ 30 วัน", state: "run" },
+    };
+    const draw = () => setSteps([st.sheet, st.photos]);
+    draw();
+    const sheetJob = Api.deleteRecord({ workDate: rec.date, fullName: user.fullName, rowTime: rec.time }).then(r => {
+      if (r?.result === "error") throw new Error(r.message || "ลบไม่สำเร็จ");
+      st.sheet.state = r?.result === "success" ? "ok" : "warn";
+      if (st.sheet.state === "warn") st.sheet.sub = "ส่งแล้ว แต่ยืนยันผลไม่ได้ ตรวจในปฏิทินอีกครั้ง";
+    }).catch(err => { st.sheet.state = "err"; st.sheet.sub = err.message || "ลบไม่สำเร็จ"; }).finally(draw);
+    const photoJob = Api.deletePhotos({ date: rec.date, name: user.fullName, duty: rec.duty, all: countThatDay === 1 }).then(r => {
+      st.photos.state = "ok";
+      st.photos.sub = r.deleted ? `${r.deleted} รูปย้ายไปถังขยะ` : "ไม่มีรูปในอัลบั้มเว็บ";
+    }).catch(err => { st.photos.state = "err"; st.photos.sub = err.message || "ลบไม่สำเร็จ"; }).finally(draw);
+    await Promise.all([sheetJob, photoJob]);
+    const ok2 = st.sheet.state !== "err";
+    finishSheet(ok2 && st.photos.state !== "err" ? "ok" : ok2 ? "warn" : "err",
+      ok2 && st.photos.state !== "err" ? "ลบเรียบร้อย" : ok2 ? "ลบจากชีทแล้ว แต่รูปในเว็บยังไม่ถูกลบ" : "ลบไม่สำเร็จ");
+    $("sendPhotosLink").hidden = true;
+    if (ok2) {
+      if (editing === rec) editing = null;
+      await Calendar.refresh("calendar", onDayClick);
+      showExisting();
+    }
+  }
+
+  // กล่องยืนยัน (แทน confirm() ของเบราว์เซอร์)
+  function ask({ title, text, ok }) {
+    return new Promise(resolve => {
+      const w = $("askSheet");
+      $("askTitle").textContent = title;
+      $("askText").textContent = text || "";
+      $("askOk").textContent = ok || "ตกลง";
+      w.hidden = false;
+      document.body.classList.add("no-scroll");
+      const done = v => {
+        w.hidden = true;
+        document.body.classList.remove("no-scroll");
+        $("askOk").onclick = $("askCancel").onclick = w.querySelector(".sheet-backdrop").onclick = null;
+        resolve(v);
+      };
+      $("askOk").onclick = () => done(true);
+      $("askCancel").onclick = () => done(false);
+      w.querySelector(".sheet-backdrop").onclick = () => done(false);
+    });
   }
 
   function onDayClick(ds) {
+    if (ds !== workDate) editing = null;
     setDate(ds);
     $("dutyForm").scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  $("dateReset").onclick = () => setDate(Calendar.todayStr());
+  $("dateReset").onclick = () => { editing = null; setDate(Calendar.todayStr()); };
   $("datePick").onclick = () => $("calCard").scrollIntoView({ behavior: "smooth", block: "start" });
 
   // ────── ส่ง ──────
@@ -124,17 +231,24 @@
   function setSteps(steps) {
     $("sendSteps").innerHTML = steps.map(s => `
       <li class="is-${s.state}">
-        <i class="fas ${{ run: "fa-circle-notch fa-spin", ok: "fa-circle-check", err: "fa-circle-xmark", warn: "fa-triangle-exclamation", wait: "fa-circle" }[s.state]}"></i>
+        ${s.state === "run" ? `<span class="spin"></span>` : `<i class="fas ${{ ok: "fa-circle-check", err: "fa-circle-xmark", warn: "fa-triangle-exclamation", wait: "fa-circle" }[s.state]}"></i>`}
         <div><b>${esc(s.title)}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ""}</div>
       </li>`).join("");
   }
-  function openSheet() {
+  function openSheet(title) {
     $("sendIcon").className = "sheet-icon";
-    $("sendIcon").innerHTML = `<i class="fas fa-circle-notch fa-spin"></i>`;
-    $("sendTitle").textContent = "กำลังส่ง...";
+    $("sendIcon").innerHTML = `<span class="spin spin-lg"></span>`;
+    $("sendTitle").textContent = title || "กำลังส่ง...";
     $("sendActions").hidden = true;
     sheet.hidden = false;
     document.body.classList.add("no-scroll");
+  }
+  function finishSheet(state, title) {
+    $("sendIcon").className = `sheet-icon is-${state}`;
+    $("sendIcon").innerHTML = `<i class="fas ${{ ok: "fa-check", warn: "fa-exclamation", err: "fa-xmark" }[state]}"></i>`;
+    $("sendTitle").textContent = title;
+    $("sendActions").hidden = false;
+    $("sendClose").textContent = state === "err" ? "ปิด" : "เสร็จสิ้น";
   }
   function closeSheet() {
     sheet.hidden = true;
@@ -154,6 +268,11 @@
     const note = $("note").value.trim();
     const files = photos.map(p => p.file);
     const date = workDate;
+    // ชื่อไฟล์รูป: {ชื่อ}-{จุดเวร}-{วว-ดด-ปป HH.mm} (เวลาที่กดส่ง ปี พ.ศ.)
+    const now = new Date(), p2 = n => String(n).padStart(2, "0");
+    const stamp = `${p2(now.getDate())}-${p2(now.getMonth() + 1)}-${String(now.getFullYear() + 543).slice(-2)} ${p2(now.getHours())}.${p2(now.getMinutes())}`;
+    const label = `${duty}-${stamp}`;
+    const rowTime = editing ? editing.time : "";
 
     $("submitBtn").disabled = true;
     openSheet();
@@ -180,6 +299,8 @@
       position: user.position,
       duty, status, note,
       photos: drivePhotos,
+      fileBase: `${user.fullName}-${label}`,
+      rowTime,
       isRetroactive: date !== Calendar.todayStr(),
     }).then(r => {
       if (r?.result === "error") throw new Error(r.message || "บันทึกไม่สำเร็จ");
@@ -190,7 +311,7 @@
     }).finally(draw);
 
     const photoJob = !files.length ? Promise.resolve() : Api.uploadToPhotos(
-      { date, name: user.fullName, position: user.position, files },
+      { date, name: user.fullName, label, files },
       p => { st.photos.sub = `กำลังอัปโหลด ${Math.round(p * 100)}%`; draw(); },
     ).then(r => {
       st.photos.state = "ok";
@@ -204,15 +325,13 @@
 
     const sheetOk = st.sheet.state !== "err";
     const allOk = sheetOk && st.photos.state !== "err";
-    $("sendIcon").className = `sheet-icon is-${allOk ? "ok" : sheetOk ? "warn" : "err"}`;
-    $("sendIcon").innerHTML = `<i class="fas ${allOk ? "fa-check" : sheetOk ? "fa-exclamation" : "fa-xmark"}"></i>`;
-    $("sendTitle").textContent = allOk ? "ส่งเวรเรียบร้อย" : sheetOk ? "บันทึกแล้ว แต่รูปเข้าอัลบั้มไม่ครบ" : "ส่งไม่สำเร็จ ลองใหม่อีกครั้ง";
+    finishSheet(allOk ? "ok" : sheetOk ? "warn" : "err",
+      allOk ? "ส่งเวรเรียบร้อย" : sheetOk ? "บันทึกแล้ว แต่รูปเข้าอัลบั้มไม่ครบ" : "ส่งไม่สำเร็จ ลองใหม่อีกครั้ง");
     $("sendPhotosLink").hidden = !files.length || st.photos.state !== "ok";
-    $("sendActions").hidden = false;
-    $("sendClose").textContent = sheetOk ? "เสร็จสิ้น" : "ปิด";
     $("submitBtn").disabled = false;
 
     if (sheetOk) {
+      editing = null;
       $("dutyForm").reset();
       photos.forEach(p => URL.revokeObjectURL(p.url));
       photos = [];

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css?v=3.0.0">
+  <link rel="stylesheet" href="css/styles.css?v=3.2.0">
 </head>
 <body>
   <header class="hero">
@@ -18,6 +18,7 @@
       <div class="hero-row">
         <span class="hero-kicker"><i class="fas fa-clipboard-check"></i> สภานักเรียน</span>
         <div class="hero-actions">
+          <a class="chip-btn" href="summary.html"><i class="fas fa-table-list"></i> สรุป</a>
           <a class="chip-btn" href="photos.html"><i class="fas fa-images"></i> รูปเวร</a>
         </div>
       </div>
@@ -37,9 +38,9 @@
     <p class="foot">สภานักเรียน · v3.0</p>
   </main>
 
-  <script src="js/config.js?v=3.0.0"></script>
-  <script src="js/data.js?v=3.0.0"></script>
-  <script src="js/auth.js?v=3.0.0"></script>
+  <script src="js/config.js?v=3.2.0"></script>
+  <script src="js/data.js?v=3.2.0"></script>
+  <script src="js/auth.js?v=3.2.0"></script>
   <script>
     if (!Auth.redirectIfLoggedIn()) {
       const list = document.getElementById("nameList");

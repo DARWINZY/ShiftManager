@@ -25,5 +25,5 @@ const CONFIG = {
   // Session key
   SESSION_KEY: "duty_current_user",
 
-  APP_VERSION: "3.0.0",
+  APP_VERSION: "3.2.0",
 };

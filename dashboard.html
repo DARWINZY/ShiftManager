@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/styles.css?v=3.0.0">
+  <link rel="stylesheet" href="css/styles.css?v=3.2.0">
 </head>
 <body>
   <header class="hero">
@@ -18,6 +18,7 @@
       <div class="hero-row">
         <span class="hero-kicker"><i class="fas fa-clipboard-check"></i> เวรประจำวัน</span>
         <div class="hero-actions">
+          <a class="chip-btn" href="summary.html"><i class="fas fa-table-list"></i> สรุป</a>
           <a class="chip-btn" href="photos.html"><i class="fas fa-images"></i> รูปเวร</a>
           <button type="button" class="chip-btn" id="logoutBtn"><i class="fas fa-right-from-bracket"></i> ออก</button>
         </div>
@@ -94,7 +95,7 @@
   <div class="sheet-wrap" id="sendSheet" hidden>
     <div class="sheet-backdrop"></div>
     <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sendTitle">
-      <div class="sheet-icon" id="sendIcon"><i class="fas fa-circle-notch fa-spin"></i></div>
+      <div class="sheet-icon" id="sendIcon"><span class="spin spin-lg"></span></div>
       <h2 id="sendTitle">กำลังส่ง...</h2>
       <ul class="steps" id="sendSteps"></ul>
       <div class="sheet-actions" id="sendActions" hidden>
@@ -104,13 +105,27 @@
     </div>
   </div>
 
+  <!-- กล่องยืนยัน -->
+  <div class="sheet-wrap" id="askSheet" hidden>
+    <div class="sheet-backdrop"></div>
+    <div class="sheet" role="alertdialog" aria-modal="true" aria-labelledby="askTitle">
+      <div class="sheet-icon is-err"><i class="fas fa-trash"></i></div>
+      <h2 id="askTitle"></h2>
+      <p class="sheet-text" id="askText"></p>
+      <div class="sheet-actions">
+        <button type="button" class="btn btn-ghost" id="askCancel">ยกเลิก</button>
+        <button type="button" class="btn btn-danger" id="askOk">ลบ</button>
+      </div>
+    </div>
+  </div>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="js/config.js?v=3.0.0"></script>
-  <script src="js/data.js?v=3.0.0"></script>
-  <script src="js/auth.js?v=3.0.0"></script>
-  <script src="js/api.js?v=3.0.0"></script>
-  <script src="js/calendar.js?v=3.0.0"></script>
-  <script src="js/app.js?v=3.0.0"></script>
+  <script src="js/config.js?v=3.2.0"></script>
+  <script src="js/data.js?v=3.2.0"></script>
+  <script src="js/auth.js?v=3.2.0"></script>
+  <script src="js/api.js?v=3.2.0"></script>
+  <script src="js/calendar.js?v=3.2.0"></script>
+  <script src="js/app.js?v=3.2.0"></script>
 </body>
 </html>

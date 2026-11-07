@@ -73,15 +73,29 @@ const Api = {
     }
   },
 
-  // ────── POST: ส่งรูปต้นฉบับเข้าอัลบั้ม /photos ──────
-  // เก็บที่ "เวรประจำวัน" > "dd/mm/yy" ชื่อไฟล์ "{ชื่อ}-{ตำแหน่ง}.นามสกุล" (เซิร์ฟเวอร์ตั้งให้)
+  // ลบรายการ (แถวในชีท + รูปใน Drive)
+  deleteRecord({ workDate, fullName, rowTime }) {
+    return this.submitRecord({ action: "delete", workDate, fullName, rowTime });
+  },
 
-  uploadToPhotos({ date, name, position, files }, onProgress) {
+  // version ของ Apps Script ที่ deploy อยู่ ("" ถ้าเก่ากว่า 3.1 หรือเช็กไม่ได้)
+  async scriptVersion() {
+    try {
+      const res = await fetch(CONFIG.SCRIPT_URL, { cache: "no-store" });
+      return (await res.json()).version || "";
+    } catch { return ""; }
+  },
+
+  // ────── POST: ส่งรูปต้นฉบับเข้าอัลบั้ม /photos ──────
+  // เก็บที่ "เวรประจำวัน" > "dd/mm/yy" ชื่อไฟล์ "{name}-{label}.นามสกุล" (เซิร์ฟเวอร์ตั้งให้)
+  // label = "{จุดเวร}-{วว-ดด-ปป HH.mm}"
+
+  uploadToPhotos({ date, name, label, files }, onProgress) {
     return new Promise((resolve, reject) => {
       const fd = new FormData();
       fd.append("date", date);
       fd.append("name", name);
-      fd.append("position", position);
+      fd.append("position", label);
       files.forEach(f => fd.append("files", f, f.name || "photo.jpg"));
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${CONFIG.PHOTOS_ORIGIN}/api/photos/duty-upload`);
@@ -144,28 +158,36 @@ const Api = {
     return dateStr;
   },
 
+  // ทุกแถวในแท็บบันทึกเวร → [{ date, time, name, position, duty, status, note, photos[] }]
+  async getAllRecords() {
+    const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&gid=${CONFIG.SHEET_GID}&_=${Date.now()}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("ดึงข้อมูลไม่สำเร็จ");
+    const out = [];
+    for (const row of this._parseCSV(await res.text())) {
+      const name = (row["ชื่อ-นามสกุล"] || "").trim();
+      const rawDate = row["วันที่ปฏิบัติงาน"] || "";
+      if (!name || !rawDate) continue;
+      out.push({
+        date: this._normalizeDate(rawDate),
+        time: (row["เวลาที่บันทึก"] || "").trim(),
+        name,
+        position: (row["ตำแหน่งในสภานักเรียน"] || "").trim(),
+        duty: (row["หน้าที่รับผิดชอบ"] || "").trim(),
+        status: (row["สถานะการมา/ลา"] || "").trim(),
+        note: (row["หมายเหตุ"] || "").trim(),
+        photos: (row["รูปหลักฐาน"] || "").split(/\s+/).filter(s => /^https?:\/\//.test(s)),
+      });
+    }
+    return out;
+  },
+
   // ประวัติเวรของคนนี้ในเดือน yearMonth ("YYYY-MM")
   async getHistory(fullName, yearMonth) {
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:csv&gid=${CONFIG.SHEET_GID}&_=${Date.now()}`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("ดึงข้อมูลไม่สำเร็จ");
-      const records = [];
-      for (const row of this._parseCSV(await res.text())) {
-        const rowName = row["ชื่อ-นามสกุล"] || "";
-        const rawDate = row["วันที่ปฏิบัติงาน"] || "";
-        if (!rowName || !rawDate) continue;
-        const date = this._normalizeDate(rawDate);
-        if (rowName.trim() !== fullName || !date.startsWith(yearMonth)) continue;
-        const photos = (row["รูปหลักฐาน"] || "").split(/\s+/).filter(s => /^https?:\/\//.test(s));
-        records.push({
-          date,
-          status: (row["สถานะการมา/ลา"] || "").trim(),
-          duty: (row["หน้าที่รับผิดชอบ"] || "").trim(),
-          note: (row["หมายเหตุ"] || "").trim(),
-          photos,
-        });
-      }
+      const records = (await this.getAllRecords())
+        .filter(r => r.name === fullName && r.date.startsWith(yearMonth))
+        .map(({ date, time, status, duty, note, photos }) => ({ date, time, status, duty, note, photos }));
       return { result: "success", records };
     } catch (err) {
       console.warn("getHistory error:", err);
@@ -202,6 +224,25 @@ const Api = {
       if (!d.hasMore) break;
     }
     return { album, images: all, locked: false };
+  },
+
+  // รูปของคนนี้ในวันนั้นบน /photos ย้ายไปถังขยะ (กู้คืนได้ 30 วัน)
+  // duty = เฉพาะไฟล์ของจุดนั้น, all = ทุกไฟล์ของคนนี้ในวันนั้น
+  async deletePhotos({ date, name, duty, all }) {
+    const res = await fetch(`${CONFIG.PHOTOS_ORIGIN}/api/photos/duty-delete`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date, name, duty, all: all ? 1 : 0 }),
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok || !d.success) throw new Error(d.message || `HTTP ${res.status}`);
+    return d;
+  },
+
+  // รูปย่อของไฟล์ Drive (ไฟล์ต้องแชร์แบบมีลิงก์) หรือ "" ถ้าไม่ใช่ลิงก์ Drive
+  driveThumb(url, size) {
+    const m = String(url).match(/\/d\/([-\w]{20,})/) || String(url).match(/[?&]id=([-\w]{20,})/);
+    return m ? `https://drive.google.com/thumbnail?id=${m[1]}&sz=w${size || 200}` : "";
   },
 
   imageUrl(id, variant) {

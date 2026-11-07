@@ -45,6 +45,11 @@ const Calendar = {
     this.records = (res && res.records) ? res.records : [];
   },
 
+  // ทุกแถวของวันนั้น (เก่าไปใหม่)
+  getRecords(ds) {
+    return this.records.filter(r => r.date === ds);
+  },
+
   // แถวล่าสุดของวันนั้น (ถ้าลงซ้ำ)
   getRecord(ds) {
     const m = this.records.filter(r => r.date === ds);

@@ -32,19 +32,22 @@ function doPost(e) {
   const lock = LockService.getScriptLock();
   try {
     const data = JSON.parse(e.postData.contents);
+    if (data.action === "delete") return deleteRecord(data, lock);
     const workDate = String(data.workDate || "").trim();
     const fullName = String(data.fullName || "").trim();
     if (!/^\d{4}-\d{2}-\d{2}$/.test(workDate) || !fullName) return json({ result: "error", message: "ข้อมูลไม่ครบ" });
 
     // 1) รูป → Drive (ทำก่อนล็อก เพราะใช้เวลานาน)
     const photos = Array.isArray(data.photos) ? data.photos : (data.photo ? [{ data: data.photo }] : []);
-    const links = savePhotos(photos, workDate, fullName, String(data.position || ""));
+    // ชื่อไฟล์: หน้าเว็บส่ง fileBase มา ("ชื่อ-จุดเวร-วว-ดด-ปป HH.mm") ถ้าไม่มีใช้ "ชื่อ-ตำแหน่ง"
+    const fileBase = String(data.fileBase || "").trim() || (data.position ? fullName + "-" + data.position : fullName);
+    const links = savePhotos(photos, workDate, fileBase);
 
     // 2) แถวในชีท — ล็อกกันสองคนเขียนพร้อมกัน
     lock.waitLock(30000);
     const sheet = getSheet();
     const timestamp = Utilities.formatDate(new Date(), TZ, "d/M/yyyy, H:mm:ss");
-    const existing = findRow(sheet, fullName, workDate);
+    const existing = findRow(sheet, fullName, workDate, data.rowTime);
 
     if (existing) {
       // ลงซ้ำวันเดิม: แก้แถวเดิม รูปเก่าเก็บไว้ รูปใหม่ต่อท้าย
@@ -69,9 +72,31 @@ function doPost(e) {
   }
 }
 
+// ────── ลบรายการ: ลบแถว + ย้ายรูปใน Drive ไปถังขยะ ──────
+function deleteRecord(data, lock) {
+  const workDate = String(data.workDate || "").trim();
+  const fullName = String(data.fullName || "").trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(workDate) || !fullName) return json({ result: "error", message: "ข้อมูลไม่ครบ" });
+  lock.waitLock(30000);
+  const sheet = getSheet();
+  const row = findRow(sheet, fullName, workDate, data.rowTime, true); // ลบต้องตรงแถวเท่านั้น
+  if (!row) return json({ result: "error", message: "ไม่พบรายการนี้ในชีท" });
+  const links = String(sheet.getRange(row, COL.photo).getValue() || "").split(/\s+/);
+  let trashed = 0;
+  links.forEach(u => {
+    const m = u.match(/\/d\/([-\w]{20,})/) || u.match(/[?&]id=([-\w]{20,})/);
+    if (!m) return;
+    try { DriveApp.getFileById(m[1]).setTrashed(true); trashed++; } catch (e) {}
+  });
+  sheet.deleteRow(row);
+  SpreadsheetApp.flush();
+  return json({ result: "success", message: "ลบเรียบร้อย", photos: trashed });
+}
+
 // ────── GET: ตรวจว่า script ทำงานอยู่ ──────
 function doGet() {
-  return json({ result: "success", message: "เวรประจำวัน v3" });
+  // หน้าเว็บอ่าน version เพื่อเปิดปุ่มลบ (ต้อง 3.1 ขึ้นไป)
+  return json({ result: "success", message: "เวรประจำวัน v3", version: "3.1" });
 }
 
 // ────── Helpers ──────
@@ -104,15 +129,23 @@ function normDate(v) {
   return s;
 }
 
-// แถวล่าสุดของคนนี้ในวันนั้น (เลขแถว) หรือ 0
-function findRow(sheet, name, workDate) {
+// แถวของคนนี้ในวันนั้น (เลขแถว) หรือ 0
+// rowTime = ค่า "เวลาที่บันทึก" ตามที่ชีทแสดง ใช้ระบุแถวตรงตัวเมื่อวันนั้นมีหลายแถว
+// ไม่ส่งมาหรือหาไม่เจอ ใช้แถวล่าสุดของวันนั้น (strict = หาไม่เจอคืน 0)
+function findRow(sheet, name, workDate, rowTime, strict) {
   const last = sheet.getLastRow();
   if (last < 2) return 0;
-  const vals = sheet.getRange(2, COL.date, last - 1, 2).getValues(); // วันที่, ชื่อ
+  const vals = sheet.getRange(2, COL.time, last - 1, 3).getValues();        // เวลา, วันที่, ชื่อ
+  const shown = sheet.getRange(2, COL.time, last - 1, 1).getDisplayValues(); // เวลาตามที่แสดง
+  const norm = s => String(s || "").replace(/\s+/g, " ").trim();
+  const want = norm(rowTime);
+  let latest = 0;
   for (let i = vals.length - 1; i >= 0; i--) {
-    if (String(vals[i][1]).trim() === name && normDate(vals[i][0]) === workDate) return i + 2;
+    if (String(vals[i][2]).trim() !== name || normDate(vals[i][1]) !== workDate) continue;
+    if (!want || norm(shown[i][0]) === want) return i + 2;
+    if (!latest) latest = i + 2;
   }
-  return 0;
+  return strict && want ? 0 : latest;
 }
 
 // โฟลเดอร์ Drive: เวรประจำวัน / dd-mm-yy (พ.ศ.)
@@ -133,10 +166,10 @@ function dayFolder(workDate) {
 }
 
 // บันทึกรูป (data URL) ลง Drive แล้วคืนลิงก์ดู
-function savePhotos(photos, workDate, fullName, position) {
+function savePhotos(photos, workDate, fileBase) {
   if (!photos.length) return [];
   const folder = dayFolder(workDate);
-  const base = (position ? fullName + "-" + position : fullName).replace(/[\\/:*?"<>|]+/g, "-");
+  const base = fileBase.replace(/[\\/:*?"<>|]+/g, "-");
   const links = [];
   photos.forEach((p, i) => {
     const m = String(p && p.data || "").match(/^data:([^;]+);base64,(.+)$/);
