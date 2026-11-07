@@ -100,6 +100,9 @@
     return cmp || coll.compare(stripTitle(a.name), stripTitle(b.name));
   }
 
+  // จุดเวรที่ค้น (เช่น "ประตู") — คนที่เคยลงจุดนั้นในเดือนนี้ผ่านการค้น
+  const dutyHit = (p, q) => Object.values(p.cells).some(recs => recs.some(r => String(r.duty || "").toLowerCase().includes(q)));
+
   // ────── วาดตาราง ──────
   function draw() {
     $("mLabel").textContent = `${MONTHS[ym.m]} ${ym.y + 543}`;
@@ -109,7 +112,7 @@
 
     const q = $("q").value.trim().toLowerCase();
     const list = rows
-      .filter(p => !q || [p.name, p.nick, p.cls, p.position].some(v => String(v).toLowerCase().includes(q)))
+      .filter(p => !q || [p.name, p.nick, p.cls, p.position].some(v => String(v).toLowerCase().includes(q)) || dutyHit(p, q))
       .filter(p => !p.extra || p.total)
       .sort(compare);
     const logged = rows.filter(p => p.total).length;
