@@ -17,6 +17,7 @@
 
   --c-present: #1f8f4e;
   --c-sick: #c93c37;
+  --c-absent: #8a1111;
   --c-leave: #b87b1a;
   --c-activity: #2563a8;
   --c-other: #6b6b6b;
@@ -263,6 +264,7 @@ a { color: inherit; text-decoration: none; }
 .opt-status i { width: 18px; text-align: center; color: var(--c, var(--ink-3)); }
 .opt-status.is-present { --c: var(--c-present); }
 .opt-status.is-sick { --c: var(--c-sick); }
+.opt-status.is-absent { --c: var(--c-absent); }
 .opt-status.is-leave { --c: var(--c-leave); }
 .opt-status.is-activity { --c: var(--c-activity); }
 .opt-status.is-other { --c: var(--c-other); }
@@ -336,9 +338,10 @@ a { color: inherit; text-decoration: none; }
 .cal-cell.is-future { color: #cdc6c4; background: transparent; cursor: default; }
 .cal-cell.is-today { border-color: var(--ink); font-weight: 700; }
 .cal-cell.is-selected { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(176, 9, 9, 0.12); }
-.cal-cell.is-present, .cal-cell.is-sick, .cal-cell.is-leave, .cal-cell.is-activity, .cal-cell.is-other { color: #fff; font-weight: 600; }
+.cal-cell.is-present, .cal-cell.is-absent, .cal-cell.is-sick, .cal-cell.is-leave, .cal-cell.is-activity, .cal-cell.is-other { color: #fff; font-weight: 600; }
 .cal-cell.is-present { background: var(--c-present); }
 .cal-cell.is-sick { background: var(--c-sick); }
+.cal-cell.is-absent { background: var(--c-absent); }
 .cal-cell.is-leave { background: var(--c-leave); }
 .cal-cell.is-activity { background: var(--c-activity); }
 .cal-cell.is-other { background: var(--c-other); }
@@ -349,6 +352,7 @@ a { color: inherit; text-decoration: none; }
 .dot { width: 10px; height: 10px; border-radius: 3px; background: #ddd; }
 .dot.is-present { background: var(--c-present); }
 .dot.is-sick { background: var(--c-sick); }
+.dot.is-absent { background: var(--c-absent); }
 .dot.is-leave { background: var(--c-leave); }
 .dot.is-activity { background: var(--c-activity); }
 .dot.is-other { background: var(--c-other); }
@@ -643,6 +647,7 @@ a { color: inherit; text-decoration: none; }
 .cell.is-ok { background: #e3f4ea; color: #17683a; }
 .cell.is-late { background: #fdf3cf; color: #85600a; }
 .cell.is-off { background: #efeeed; color: #6b6564; }
+.cell.is-absent { background: #fbe1e1; color: #8a1111; font-weight: 600; }
 .cell:not(.is-none):hover { filter: brightness(0.96); }
 .cell.is-sel { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(176, 9, 9, 0.15); }
 
@@ -653,6 +658,7 @@ a { color: inherit; text-decoration: none; }
 .cell-dot.is-ok { background: #3fae6c; }
 .cell-dot.is-late { background: #e8b923; }
 .cell-dot.is-off { background: #b9b4b2; }
+.cell-dot.is-absent { background: #d93a3a; }
 
 /* รายละเอียดด้านขวา */
 .sum-detail {
@@ -678,6 +684,7 @@ a { color: inherit; text-decoration: none; }
 .d-late { display: inline-block; margin-left: 4px; padding: 1px 8px; border-radius: 999px; background: #fdf3cf; color: #85600a; font-size: 0.72rem; font-weight: 500; }
 .d-row .st-present { color: var(--c-present); }
 .d-row .st-sick { color: var(--c-sick); }
+.d-row .st-absent { color: var(--c-absent); }
 .d-row .st-leave { color: var(--c-leave); }
 .d-row .st-activity { color: var(--c-activity); }
 .d-sec { margin-top: 18px; }

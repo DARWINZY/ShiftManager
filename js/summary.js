@@ -41,11 +41,13 @@
     const main = !st || st.key === "present" ? shortDuty(r.duty) || "มา" : st.short;
     return main + (recs.length > 1 ? ` +${recs.length - 1}` : "");
   }
-  // สีช่อง: เขียว = มาทำ ลงวันนั้น, เหลือง = มาทำ แต่ลงย้อนหลัง, เทา = ลา/ป่วย/กิจกรรม/อื่นๆ
+  // สีช่อง: เขียว = มาทำ ลงวันนั้น, เหลือง = มาทำ แต่ลงย้อนหลัง, แดง = ไม่ได้ปฏิบัติหน้าที่,
+  // เทา = ลา/ป่วย/กิจกรรม/อื่นๆ
   function cellKey(recs) {
     if (!recs || !recs.length) return "";
     const r = recs[recs.length - 1];
     const st = statusOf(r.status);
+    if (st && st.key === "absent") return "absent";
     if (st && st.key !== "present") return "off";
     return isLate(r) ? "late" : "ok";
   }
@@ -310,7 +312,7 @@
   });
 
   // ────── คำอธิบายสี ──────
-  $("legend").innerHTML = [["ok", "มาทำ (ลงวันนั้น)"], ["late", "มาทำ (ลงย้อนหลัง)"], ["off", "ลา / ป่วย / กิจกรรม / อื่นๆ"]]
+  $("legend").innerHTML = [["ok", "มาทำ (ลงวันนั้น)"], ["late", "มาทำ (ลงย้อนหลัง)"], ["absent", "ไม่ได้ปฏิบัติหน้าที่"], ["off", "ลา / ป่วย / กิจกรรม / อื่นๆ"]]
     .map(([k, t]) => `<span><i class="cell-dot is-${k}"></i>${t}</span>`).join("")
     + `<span class="muted">กดหัวคอลัมน์เพื่อเรียง · กดช่องเพื่อดูรายละเอียด</span>`;
 
