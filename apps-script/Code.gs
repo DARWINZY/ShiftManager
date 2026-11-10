@@ -47,10 +47,12 @@ function doPost(e) {
     lock.waitLock(30000);
     const sheet = getSheet();
     const timestamp = Utilities.formatDate(new Date(), TZ, "d/M/yyyy, H:mm:ss");
-    const existing = findRow(sheet, fullName, workDate, data.rowTime);
+    // แก้แถวเดิมเฉพาะตอนกดดินสอ (หน้าเว็บส่ง rowTime มา) ไม่งั้นเพิ่มแถวใหม่
+    // เพราะ 1 คนลงได้หลายจุดในวันเดียวกัน
+    const existing = data.rowTime ? findRow(sheet, fullName, workDate, data.rowTime) : 0;
 
     if (existing) {
-      // ลงซ้ำวันเดิม: แก้แถวเดิม รูปเก่าเก็บไว้ รูปใหม่ต่อท้าย
+      // แก้รายการ: แก้แถวเดิม รูปเก่าเก็บไว้ รูปใหม่ต่อท้าย
       const oldLinks = String(sheet.getRange(existing, COL.photo).getValue() || "").split(/\s+/).filter(s => /^https?:\/\//.test(s));
       sheet.getRange(existing, 1, 1, HEADERS.length).setValues([[
         timestamp, workDate, fullName, data.position || "", data.duty || "", data.status || "", data.note || "",
@@ -95,8 +97,8 @@ function deleteRecord(data, lock) {
 
 // ────── GET: ตรวจว่า script ทำงานอยู่ ──────
 function doGet() {
-  // หน้าเว็บอ่าน version เพื่อเปิดปุ่มลบ (ต้อง 3.1 ขึ้นไป)
-  return json({ result: "success", message: "เวรประจำวัน v3", version: "3.1" });
+  // หน้าเว็บอ่าน version: 3.1 เปิดปุ่มลบ, 3.2 ส่งเพิ่มหลายจุดในวันเดียวได้
+  return json({ result: "success", message: "เวรประจำวัน v3", version: "3.2" });
 }
 
 // ────── Helpers ──────

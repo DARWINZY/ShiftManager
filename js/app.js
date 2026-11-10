@@ -89,7 +89,8 @@
   // ────── รายการที่ลงไว้แล้วของวันนั้น (แก้ ✎ / ลบ 🗑) ──────
   let editing = null;   // แถวที่กำลังแก้ (record) หรือ null
   let canDelete = false; // Apps Script ต้อง 3.1 ขึ้นไปถึงจะลบได้
-  Api.scriptVersion().then(v => { canDelete = parseFloat(v) >= 3.1; showExisting(); });
+  let canAdd = false;    // Apps Script ต้อง 3.2 ขึ้นไป ไม่งั้นส่งเพิ่มจะไปทับแถวล่าสุดของวันนั้น
+  Api.scriptVersion().then(v => { canDelete = parseFloat(v) >= 3.1; canAdd = parseFloat(v) >= 3.2; showExisting(); });
 
   function picsHtml(rec, idx) {
     const list = rec.photos;
@@ -130,7 +131,7 @@
   function syncSubmitLabel(recs) {
     const label = $("submitBtn").querySelector("span");
     label.textContent = editing ? "บันทึกการแก้ไข"
-      : recs && recs.length ? "ส่งแก้ไข"
+      : recs && recs.length ? "ส่งเพิ่มอีกจุด"
       : workDate === Calendar.todayStr() ? "ส่งเวรวันนี้" : "ส่งเวรย้อนหลัง";
   }
 
@@ -262,6 +263,10 @@
     if (!duty) {
       toast("เลือกจุดเวรก่อน", "warn");
       $("dutyGrid").scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (!editing && !canAdd && Calendar.getRecords(workDate).length) {
+      toast("ระบบหลังบ้านยังไม่อัปเดต ส่งเพิ่มจุดไม่ได้ ถ้าจะแก้รายการเดิมให้กดรูปดินสอ", "warn");
       return;
     }
     const status = document.querySelector('input[name="status"]:checked')?.value || STATUSES[0].value;
