@@ -24,6 +24,7 @@
   }
 
   // ────── จุดเวร (เลือกได้ 1 จุด) ──────
+  $("dutyGrid").onchange = () => syncSubmitLabel();
   $("dutyGrid").innerHTML = DUTY_STATIONS.map((s, i) => `
     <label class="opt">
       <input type="radio" name="duty" value="${esc(s)}" id="duty_${i}">
@@ -128,10 +129,19 @@
     n.hidden = false;
   }
 
+  // แถวที่จะถูกแก้: กดดินสอ หรือเลือกจุดเวรเดิมที่ลงไว้แล้วในวันนั้น (จุดใหม่ = เพิ่มแถว)
+  function targetRec(recs, duty) {
+    if (editing) return editing;
+    if (!duty) return null;
+    return recs.find(r => (r.duty || "").split(/\s*,\s*/).includes(duty)) || null;
+  }
+
   function syncSubmitLabel(recs) {
+    recs = recs || Calendar.getRecords(workDate);
     const label = $("submitBtn").querySelector("span");
-    label.textContent = editing ? "บันทึกการแก้ไข"
-      : recs && recs.length ? "ส่งเพิ่มอีกจุด"
+    const duty = document.querySelector('input[name="duty"]:checked')?.value;
+    label.textContent = targetRec(recs, duty) ? "บันทึกการแก้ไข"
+      : recs.length ? "ส่งเพิ่มอีกจุด"
       : workDate === Calendar.todayStr() ? "ส่งเวรวันนี้" : "ส่งเวรย้อนหลัง";
   }
 
@@ -265,7 +275,8 @@
       $("dutyGrid").scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
-    if (!editing && !canAdd && Calendar.getRecords(workDate).length) {
+    const target = targetRec(Calendar.getRecords(workDate), duty);
+    if (!target && !canAdd && Calendar.getRecords(workDate).length) {
       toast("ระบบหลังบ้านยังไม่อัปเดต ส่งเพิ่มจุดไม่ได้ ถ้าจะแก้รายการเดิมให้กดรูปดินสอ", "warn");
       return;
     }
@@ -277,7 +288,7 @@
     const now = new Date(), p2 = n => String(n).padStart(2, "0");
     const stamp = `${p2(now.getDate())}-${p2(now.getMonth() + 1)}-${String(now.getFullYear() + 543).slice(-2)} ${p2(now.getHours())}.${p2(now.getMinutes())}`;
     const label = `${duty}-${stamp}`;
-    const rowTime = editing ? editing.time : "";
+    const rowTime = target ? target.time : "";
 
     $("submitBtn").disabled = true;
     openSheet();
