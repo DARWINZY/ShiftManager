@@ -1,3 +1,13 @@
+> [!IMPORTANT]
+> **ย้ายแล้ว: repo นี้เป็นโค้ดเก่า ไม่ได้ใช้งานและไม่มีการอัปเดตแล้ว**
+>
+> - โค้ดที่ใช้งานจริงอยู่ใน repo NEXT9: https://github.com/9TheeXD/Next9/tree/main/ShiftManager
+> - หน้าลงเวรใช้งานจริง: https://next9-web.vercel.app/duty/ (GitHub Pages ของ repo นี้จะพาไปหน้านั้นอัตโนมัติ)
+> - การตั้งค่า (คนลงเวร จุดเวร สถานะ ลิงก์ Apps Script) ทำในหน้าจัดการ NEXT9 `/admin/` ไม่ต้องแก้โค้ด
+> - ติดตั้ง Apps Script ใหม่: ใช้ `ShiftManager/apps-script/Code.gs` จาก repo NEXT9 (ดู `HANDOVER.md` ใน repo นั้น)
+>
+> โค้ดด้านล่างเก็บไว้เพื่ออ้างอิงเท่านั้น
+
 # 📋 ระบบบันทึกเวรประจำวัน — สภานักเรียน v3.0
 
 ## มีอะไรใหม่ใน v3
